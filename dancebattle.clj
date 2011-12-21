@@ -1,3 +1,5 @@
+;http://www.facebook.com/careers/puzzles.php?puzzle_id=12
+
 (require 'clojure.string)
 (require 'clojure.java.io)
 
