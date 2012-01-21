@@ -1,4 +1,8 @@
 ; http://www.facebook.com/careers/puzzles.php?puzzle_id=2
+; how this works, it will use the cheapest per 100 until it would exceed the target, then 
+; it will look for the cheapest way to bridge the last gap by using "individual sums" of each block
+; it does not compute combinations between blocks for now i.e. 700 + 700 and not 200 + 75 :-(
+ 
   
 
 (require 'clojure.string)
@@ -51,41 +55,64 @@
   ) 
 )
 
-(def sorted-prices-by-100
+(defn sorter
+  [sortme]  
   (into 
-    (sorted-map-by (fn [k1 k2] (compare (get prices-by-100 k1) (get prices-by-100 k2)))) prices-by-100
-  )  
+    (sorted-map-by (fn [k1 k2] (compare (get sortme k1) (get sortme k2)))) sortme
+  )
 )
 
-(def sorted-without-above
-   (let [m sorted-prices-by-100]
-  (select-keys m (for [[k v] m :when (< k weight-to-drop)] k))) 
+(def sorted-prices
+  (sorter weight-price-hash)
 )
 
-; add the cheapest per 100 while under weight to drop
+(def sorted-prices-by-100
+  (sorter prices-by-100)
+)
 
+(def cheapest-by-100 
+  (get (first sorted-prices-by-100) 0)
+)
+
+(defn remaining
+  [sum]  
+  (let [rem (- weight-to-drop (reduce + sum))]
+    (reduce 
+      (fn[memo f] 
+        (merge {(get f 0) (* (Math/ceil (/ rem (get f 0))) (get f 1))} memo))
+       {} sorted-prices
+    )  
+  )
+)
+
+(def sorted-remaining
+  (sorter (remaining (list cheapest-by-100)))
+)
+
+(defn map-prices 
+  [sum]
+  (reduce 
+    (fn[memo f] (concat (list (get weight-price-hash f)) memo)) (list) sum
+  )
+)
 
 (defn dump-manifest
   [sum cheapest]
   (if (> (reduce + (concat sum cheapest)) weight-to-drop)
-    sum
+    (concat (map-prices sum) (list (get (first sorted-remaining) 1)))
     (recur (concat sum cheapest) cheapest)
   )    
 )
 
+(def dump-manifest-price
+  (reduce + (dump-manifest (list) (list cheapest-by-100)))
+)
 
 
-(println weight-price-hash)
-(println prices-by-100)
-(println sorted-prices-by-100)
-(println sorted-without-above)
-(println (dump-manifest (list) (list 700)))
+(println dump-manifest-price)
 
 ; tests
 
-(deftest check-weight-to-drop
-  (is (= 1250 weight-to-drop))         
-)
 
 (deftest check-weight-price-hash
   (is (= 3250 (get weight-price-hash 200)))         
@@ -103,8 +130,16 @@
   (is (= [75 41000/3] (last sorted-prices-by-100)))         
 )
 
-(deftest check-prices-without-above
-  (is (= nil (get sorted-without-above 1300)))         
+
+(deftest check-remaining
+  (is (= 82000 (get (remaining (list 700)) 75)))         
+  (is (= 4750 (get (remaining (list 700)) 700)))         
+  (is (= 9750 (get (remaining (list 700)) 200)))         
+  (is (= 10500 (get (remaining (list 700)) 1300)))         
+)
+
+(deftest this-thing-work
+  (is (= 9500 dump-manifest-price))         
 )
 
 (run-all-tests #"clojure.test.bin-crash")
