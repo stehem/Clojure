@@ -117,5 +117,35 @@
 
 (println dump-manifest-price)
 
+; tests
+
+
+(deftest check-weight-price-hash
+  (is (= 3250 (get weight-price-hash 200)))
+  (is (= 10500 (get weight-price-hash 1300)))
+  (is (= 4750 (get weight-price-hash 700)))
+  (is (= 10250 (get weight-price-hash 75)))
+)
+
+(deftest check-prices-by-100
+  (is (= 1625 (get prices-by-100 200)))
+)
+
+(deftest check-sorted-prices-by-100
+  (is (= [700 4750/7] (first sorted-prices-by-100)))
+  (is (= [75 41000/3] (last sorted-prices-by-100)))
+)
+
+
+(deftest check-remaining
+  (is (= 82000 (get (remaining (list 700)) 75)))
+  (is (= 4750 (get (remaining (list 700)) 700)))
+  (is (= 9750 (get (remaining (list 700)) 200)))
+  (is (= 10500 (get (remaining (list 700)) 1300)))
+)
+
+(deftest this-thing-work
+  (is (= 9500 dump-manifest-price))
+)
 
 (run-all-tests #"clojure.test.bin-crash")
