@@ -42,15 +42,28 @@
         row (get board y)
         horizontal (assoc board x (into [] (map #(if (= % 'Q) % 'X) row)))
         vertical (map (fn[r] (assoc r x (if (not= 'Q (get r x)) 'X (get r x)))) horizontal)
-                         
-                         
         ]
     vertical
 
 ))
 
+
+(defn cross-diagonal
+  [queen board]
+  (let [[x y] queen
+        x (- x 1)
+        y (- y 1)]
+    (map-indexed (fn[irow row] (map-indexed (fn[icell cell] 
+                         (if (= irow icell) 'Y cell)
+
+                         ) row)  ) board)
+))
+
+
 ;(println (add-queen [8 8] (chessboard 8)))
-(println (crosser [8 8] (add-queen [8 8] (chessboard 8))))
+;(println (crosser [8 8] (add-queen [8 8] (chessboard 8))))
+
+(println (cross-diagonal [8 8](add-queen [8 8] (chessboard 8))))
 
 
 (run-all-tests #"clojure.test.leetcode")
