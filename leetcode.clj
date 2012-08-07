@@ -27,44 +27,71 @@
 (defn add-queen
   [queen board]
   (let  [[x y] queen
-        x (- x 1) y (- y 1) 
         row (get board y) 
         value (get row x)
         updated-row (if (not= 'Q value) (assoc row x 'Q) row)
         updated-board (assoc board y updated-row)] updated-board))
 
 
-(defn crosser
+(defn cross-horizontal
   [queen board]
   (let [[x y] queen
-        x (- x 1)
-        y (- y 1)
-        row (get board y)
-        horizontal (assoc board x (into [] (map #(if (= % 'Q) % 'X) row)))
-        vertical (map (fn[r] (assoc r x (if (not= 'Q (get r x)) 'X (get r x)))) horizontal)
-        ]
-    vertical
+        row (get board y)]
+    (assoc board y (into [] (map #(if (= % 'Q) % 'X) row)))))
 
-))
+
+(defn cross-vertical
+  [queen board]
+  (let [[x y] queen]
+  (map (fn[r] (assoc r x (if (not= 'Q (get r x)) 'X (get r x)))) board)))
 
 
 (defn cross-diagonal
   [queen board]
-  (let [[x y] queen
-        x (- x 1)
-        y (- y 1)]
-    (map-indexed (fn[irow row] (map-indexed (fn[icell cell] 
-                         (if (= irow icell) 'Y cell)
+  (let [[x y] queen]
+    (map-indexed 
+      (fn[irow row] 
+        (into [] (map-indexed (fn[icell cell] 
+          (let [diffx (- x icell) diffy (- y irow)]
+            (if 
+              (or 
+                (and (> y irow) (= (+ x diffy) icell)) 
+                (and (< y irow) (= (- x diffy) icell))
+                (and (> y irow) (= (- x diffy) icell)) 
+                (and (< y irow) (= (+ x diffy) icell))
+              )
+            'X cell)
+          )
+        )row)))board)))
 
-                         ) row)  ) board)
-))
+
+(defn crosser
+  [queen board]
+  (let [horizontal (cross-horizontal queen board)
+        vertical (cross-vertical queen horizontal)
+        diagonal (cross-diagonal queen vertical)
+        updated-board diagonal]
+    (into [] updated-board)))
+
+
+(defn nqueens
+  [n]
+  (let [board (chessboard n)]
+    
+  ))
 
 
 ;(println (add-queen [8 8] (chessboard 8)))
 ;(println (crosser [8 8] (add-queen [8 8] (chessboard 8))))
 
-(println (cross-diagonal [8 8](add-queen [8 8] (chessboard 8))))
+(let [onequeen (crosser [0 0] (add-queen [0 0] (chessboard 4)))
+      twoqueen (crosser [2 1] (add-queen [2 1] onequeen))]
+(doseq [x onequeen]
+  ;(println x)
+  ))
 
+
+(doseq [x (nqueens 4)] (println x))
 
 (run-all-tests #"clojure.test.leetcode")
 
