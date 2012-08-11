@@ -21,77 +21,171 @@
 ; N Queens
 (defn chessboard
   [n]
-  (into [] (repeat n (into [] (take n (repeat '.))))))
+  (for [x (range n) y (range n)] [x y]))
+
+
+(defn cross
+  [board queen]
+  (map 
+    (fn[cell] 
+      (if (or (= 'Q cell) (= 'X cell))
+        cell
+        (let [[xcell ycell] cell [xqueen yqueen] queen diffx (- xqueen xcell) diffy (- yqueen ycell)]
+          (cond
+            (= xcell xqueen) 'X
+            (= ycell yqueen) 'X
+            (and (> yqueen ycell) (= (+ xqueen diffy) xcell)) 'X
+            (and (< yqueen ycell) (= (- xqueen diffy) xcell)) 'X
+            (and (> yqueen ycell) (= (- xqueen diffy) xcell)) 'X
+            (and (< yqueen ycell) (= (+ xqueen diffy) xcell)) 'X
+            :else cell
+          )))) board))
+
+
+(defn get-queens
+  [board]
+  (filter #(and (not= % 'Q) (not= % 'X)) board))
 
 
 (defn add-queen
-  [queen board]
-  (let  [[x y] queen
-        row (get board y) 
-        value (get row x)
-        updated-row (if (not= 'Q value) (assoc row x 'Q) row)
-        updated-board (assoc board y updated-row)] updated-board))
+  [board queen]
+  (cross (map (fn[cell] (if (= cell queen) 'Q cell)) board) queen))
 
 
-(defn cross-horizontal
-  [queen board]
-  (let [[x y] queen
-        row (get board y)]
-    (assoc board y (into [] (map #(if (= % 'Q) % 'X) row)))))
-
-
-(defn cross-vertical
-  [queen board]
-  (let [[x y] queen]
-  (map (fn[r] (assoc r x (if (not= 'Q (get r x)) 'X (get r x)))) board)))
-
-
-(defn cross-diagonal
-  [queen board]
-  (let [[x y] queen]
-    (map-indexed 
-      (fn[irow row] 
-        (into [] (map-indexed (fn[icell cell] 
-          (let [diffx (- x icell) diffy (- y irow)]
-            (if 
-              (or 
-                (and (> y irow) (= (+ x diffy) icell)) 
-                (and (< y irow) (= (- x diffy) icell))
-                (and (> y irow) (= (- x diffy) icell)) 
-                (and (< y irow) (= (+ x diffy) icell))
-              )
-            'X cell)
-          )
-        )row)))board)))
-
-
-(defn crosser
-  [queen board]
-  (let [horizontal (cross-horizontal queen board)
-        vertical (cross-vertical queen horizontal)
-        diagonal (cross-diagonal queen vertical)
-        updated-board diagonal]
-    (into [] updated-board)))
+(defn next-gen
+  [boards]
+  (distinct (reduce 
+      (fn[result board] 
+        (into result (map (fn[queen] (add-queen board queen)) (get-queens board) ) ))
+          [] boards)))
 
 
 (defn nqueens
   [n]
-  (let [board (chessboard n)]
-    
-  ))
+  (loop [result [(chessboard n)] i 0] 
+    (if (= n i)
+      result
+      (recur (next-gen result) (inc i)))))
 
 
-;(println (add-queen [8 8] (chessboard 8)))
-;(println (crosser [8 8] (add-queen [8 8] (chessboard 8))))
+(deftest test-nqueens
+  (is
+    (
+      (
+        'X 'Q 'X 'X 
+        'X 'X 'X 'Q 
+        'Q 'X 'X 'X 
+        'X 'X 'Q 'X
+      ) 
+      (
+        'X 'X 'Q 'X 
+        'Q 'X 'X 'X 
+        'X 'X 'X 'Q 
+        'X 'Q 'X 'X
+      )
+    ) (nqueens 4))
+    ;http://en.wikipedia.org/wiki/Eight_queens_puzzle#Counting_solutions 
+    (is (= 2 (count (nqueens 4))))
+    (is (= 10 (count (nqueens 5))))
+    (is (= 4 (count (nqueens 6))))
+    ;(is (= 40 (count (nqueens 7))))
+    ;(is (= 92 (count (nqueens 8))))
+         )
+; /N Queens
 
-(let [onequeen (crosser [0 0] (add-queen [0 0] (chessboard 4)))
-      twoqueen (crosser [2 1] (add-queen [2 1] onequeen))]
-(doseq [x onequeen]
-  ;(println x)
-  ))
+
+; Next Permutation
+; did that already for Project Euler, pretty much copy/paste
+(defn find-k
+  [coll]
+    (loop [k (- (count coll) 2)]
+      (if (= -1 k)
+        nil
+        (if (< (nth coll k) (nth coll (+ k 1)))
+          k
+          (recur (dec k)) ))))
 
 
-(doseq [x (nqueens 4)] (println x))
+(defn find-l
+  [coll k]
+  (if (= nil k)
+    nil
+    (loop [l (- (count coll) 1)]
+      (if (< (nth coll k) (nth coll l))
+        l
+        (recur (dec l)) ))))
+
+
+(defn swap
+  [coll k l]
+    (assoc coll k (nth coll l) l (nth coll k)))
+
+
+(defn rev
+  [coll k]
+  (into (subvec coll 0 (+ k 1)) (reverse (subvec coll (+ k 1)))))
+
+
+(defn lexi-perms
+  [start stop]
+  (if (= (reverse(sort start)) start) 
+    (into [] (sort start))
+    (loop [coll start i 1]
+      (let [k (find-k coll) l (find-l coll k)]
+        (if (or (= nil k) (= stop i))
+          coll
+          (recur (rev (swap coll k l) k) (inc i))) ))))
+
+
+(deftest test-next-permutation
+  (is (= [1 3 2] (lexi-perms [1 2 3] 2)))
+  (is (= [1 2 3] (lexi-perms [3 2 1] 2)))
+  (is (= [1 5 1] (lexi-perms [1 1 5] 2))))
+; /Next Permutation
+
+
+; Palindrome Number
+(defn palindrome-nb
+  [n]
+  (let [nb (seq (str n))]
+    (= nb (reverse nb))))
+  
+
+(deftest test-palindrome-nb
+  (is (= true (palindrome-nb 1221)))
+  (is (= false (palindrome-nb 1234))))
+; /Palindrome Number
+
+
+; Permutation Sequence
+; piggybacking on next-permutation
+(deftest test-permutation-sequence
+  (let [a (into [] (range 1 4))]
+    (= [1 3 2] (lexi-perms a 1))
+    (= [2 3 1] (lexi-perms a 3))
+    (= [3 2 1] (lexi-perms a 5))))
+; /Permutation Sequence
+
+
+
+; Permutations
+(defn permutations
+  [grp]
+  
+  
+  
+)
+; /Permutations
+
+
+
+
+
+
+
+
+
+
 
 (run-all-tests #"clojure.test.leetcode")
 
