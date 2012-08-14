@@ -19,12 +19,15 @@
 
 
 ; N Queens
+; needs to increase heap size on OSX otherwise FIREWORKS OF FAIL
+; java -Xms512m -Xmx1g -cp ~/clojure-1.4.0/clojure-1.4.0.jar clojure.main ~/leetcode.clj
+; 20 secs for n=8
 (defn chessboard
   [n]
   (for [x (range n) y (range n)] [x y]))
 
 
-(defn cross
+(defn add-queen
   [board queen]
   (map 
     (fn[cell] 
@@ -39,58 +42,44 @@
             (and (> yqueen ycell) (= (- xqueen diffy) xcell)) 'X
             (and (< yqueen ycell) (= (+ xqueen diffy) xcell)) 'X
             :else cell
-          )))) board))
-
-
-(defn get-queens
-  [board]
-  (filter #(and (not= % 'Q) (not= % 'X)) board))
-
-
-(defn add-queen
-  [board queen]
-  (cross (map (fn[cell] (if (= cell queen) 'Q cell)) board) queen))
+          )))) (map (fn[cell] (if (= cell queen) 'Q cell)) board)))
 
 
 (defn next-gen
   [boards]
-  (distinct (reduce 
-      (fn[result board] 
-        (into result (map (fn[queen] (add-queen board queen)) (get-queens board) ) ))
-          [] boards)))
+  (reduce 
+    (fn[result board] 
+      (into result (map (fn[queen] (add-queen board queen)) (filter #(and (not= % 'Q) (not= % 'X)) board))))
+        (set nil) boards))
 
 
 (defn nqueens
   [n]
-  (loop [result [(chessboard n)] i 0] 
-    (if (= n i)
-      result
-      (recur (next-gen result) (inc i)))))
+  (reduce (fn[result n] (next-gen result)) [(chessboard n)] (range 1 (+ n 1))))
 
 
 (deftest test-nqueens
   (is
-    (
+    '(
       (
-        'X 'Q 'X 'X 
-        'X 'X 'X 'Q 
-        'Q 'X 'X 'X 
-        'X 'X 'Q 'X
+        X Q X X 
+        X X X Q 
+        Q X X X 
+        X X Q X
       ) 
       (
-        'X 'X 'Q 'X 
-        'Q 'X 'X 'X 
-        'X 'X 'X 'Q 
-        'X 'Q 'X 'X
+        X X Q X 
+        Q X X X 
+        X X X Q 
+        X Q X X
       )
     ) (nqueens 4))
     ;http://en.wikipedia.org/wiki/Eight_queens_puzzle#Counting_solutions 
     (is (= 2 (count (nqueens 4))))
     (is (= 10 (count (nqueens 5))))
     (is (= 4 (count (nqueens 6))))
-    ;(is (= 40 (count (nqueens 7))))
-    ;(is (= 92 (count (nqueens 8))))
-         )
+    (is (= 40 (count (nqueens 7))))
+    (is (= 92 (count (nqueens 8)))))
 ; /N Queens
 
 
@@ -176,9 +165,6 @@
   
 )
 ; /Permutations
-
-
-
 
 
 
