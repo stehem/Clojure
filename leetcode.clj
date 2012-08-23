@@ -227,5 +227,51 @@
 ; /Subsets
 
 
+; Rotate Image
+; 90 deg clockwise
+(defn img-with-index
+  [image]
+  (reduce (fn[acc row] (into acc (map-indexed (fn[idx itm] [idx itm]) row))) [] image))
+
+
+(defn rotate-line
+  [i img]
+  (reduce (fn[acc p] (if (= i (first p)) (conj acc (last p)) acc)) [] img))
+
+
+(defn rotate-image
+  [image]
+  (reduce (fn[acc col] (conj acc (rotate-line col (img-with-index image)) )) [] (range 0 (count (first image)))))
+
+
+(def image
+  '[
+    [+ + + * + + +]
+    [+ + + * * + +]
+    [+ + + * * * +]
+    [+ + + * * * *]
+    [+ + + * * * +]
+    [+ + + * * + +]
+    [+ + + * + + +]
+   ])
+
+
+(def rotated-image
+  '[
+    [+ + + + + + +]
+    [+ + + + + + +]
+    [+ + + + + + +]
+    [* * * * * * *]
+    [+ * * * * * +]
+    [+ + * * * + +]
+    [+ + + * + + +]
+   ])
+
+
+(deftest test-rotate-image
+  (is (= rotated-image (rotate-image image))))
+; /Rotate Image
+
+
 (run-all-tests #"clojure.test.leetcode")
 
