@@ -78,8 +78,8 @@
     (is (= 2 (count (nqueens 4))))
     (is (= 10 (count (nqueens 5))))
     (is (= 4 (count (nqueens 6))))
-    ;(is (= 40 (count (nqueens 7))))
-    ;(is (= 92 (count (nqueens 8))))
+    (is (= 40 (count (nqueens 7))))
+    (is (= 92 (count (nqueens 8))))
          )
 ; /N Queens
 
@@ -271,6 +271,85 @@
 (deftest test-rotate-image
   (is (= rotated-image (rotate-image image))))
 ; /Rotate Image
+
+
+; Spiral Matrix
+(defn flat-with-index
+  [m]
+  (reduce 
+    (fn[acc x] (into acc x)) [] 
+      (map-indexed (fn[i e] (map-indexed (fn[ii ee] [i ii]) e)) m)))
+
+
+(defn spiral-path
+  [step stairs res]
+  (let [[x y] step]
+  (letfn [
+    (not-already [step res] (nil? (some #(= step %) res)))
+    (next-step [step stairs pred] (first (filter pred stairs)))
+    (right [step stairs] (next-step step stairs #(= [x (inc y)] %) ))
+    (down [step stairs] (next-step step stairs #(and (< x (first %)) (= y (last %))))) 
+    (left [step stairs] (next-step step stairs #(= [x (dec y)] %)))
+    (up [step stairs] (next-step step stairs #(= [(dec x) y] %))) ]
+      (let [r (right step stairs) d (down step stairs) l (left step stairs) u (up step stairs)]
+        (cond
+          (and (and r (not-already r res)) (and u (not-already u res))) u
+          (and r (not-already r res)) r
+          (and d (not-already d res)) d
+          (and l (not-already l res)) l
+          (and u (not-already u res)) u )))))
+
+
+(defn map-back-to-n
+  [acc m]
+  (map (fn[step] (let [[x y] step] (get (get m x) y))) acc))
+
+
+(defn spiral-matrix
+  [m]
+  (map-back-to-n (butlast 
+    (let [stairs (flat-with-index m)]
+      (reduce 
+        (fn[acc x] 
+          (let [step (last acc)]
+            (conj acc (spiral-path step stairs acc))))
+        [(first stairs)]
+        stairs) )) m))
+
+
+(def spiral-a
+  '[
+    [ 1 2 3 ]
+    [ 4 5 6 ]
+    [ 7 8 9 ]
+  ])
+
+
+(def spiral-b
+  '[
+    [ 1 2 3 4 ]
+    [ 5 6 7 8 ]
+    [ 9 10 11 12 ]
+    [ 13 14 15 16 ]
+  ])
+
+
+(def spiral-c
+  '[
+    [ 1 2 3 4 5 ]
+    [ 6 7 8 9 10 ]
+    [ 11 12 13 14 15 ]
+    [ 16 17 18 19 20 ]
+    [ 21 22 23 24 25 ]
+  ]) 
+
+
+(deftest test-spiral-matrix
+  (is (= '(1 2 3 6 9 8 7 4 5) (spiral-matrix spiral-a)))
+  (is (= '(1 2 3 4 8 12 16 15 14 13 9 5 6 7 11 10) (spiral-matrix spiral-b)))
+  (is (= '(1 2 3 4 5 10 15 20 25 24 23 22 21 16 11 6 7 8 9 14 19 18 17 12 13) (spiral-matrix spiral-c))))
+; /Spiral Matrix
+
 
 
 (run-all-tests #"clojure.test.leetcode")
